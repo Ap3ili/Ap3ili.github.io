@@ -1,6 +1,5 @@
 ---
 layout: page
-title: "About"
 icon: fas fa-info-circle
 order: 7
 ---
@@ -10,7 +9,7 @@ I split my time between studying to become a red teamer and completing CTFs on H
 
 Outside of security, I love skateboarding, exploring the world, and collecting anime memorabilia.
 
-## Certifications {#certs}
+## Certifications
 
-1. Ethical Junior Penetration Tester (PJPT)  
-2. Practical Junior Penetration Tester (PJPT)
+-  Ethical Junior Penetration Tester (PJPT)  
+-  Practical Junior Penetration Tester (PJPT)

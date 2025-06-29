@@ -2,7 +2,7 @@
 layout: page
 title: "About"
 icon: fas fa-info-circle
-order: 4
+order: 7
 ---
 
 I've spent the last 3 years working with offensive security, with a strong focus on Linux and Active Directory.  

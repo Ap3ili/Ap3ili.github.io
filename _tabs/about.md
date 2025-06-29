@@ -10,7 +10,7 @@ I split my time between studying to become a red teamer and completing CTFs on H
 
 Outside of security, I love skateboarding, exploring the world, and collecting anime memorabilia.
 
-## Certifications
+## Certifications [#](#certs) {#certs}
 
 1. Ethical Junior Penetration Tester (PJPT)  
 2. Practical Junior Penetration Tester (PJPT)

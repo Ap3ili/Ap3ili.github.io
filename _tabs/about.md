@@ -1,8 +1,3 @@
----
-# the default layout is 'page'
-order: 4
----
-
 I've spent the last 3 years working with offensive security, with a strong focus on Linux and Active Directory. 
 I split my time between studying to become a red teamer and completing CTFs on HackTheBox and other known platforms.
 

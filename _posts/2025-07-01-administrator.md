@@ -3,7 +3,7 @@ categories:
 - CTF
 layout: post
 image:
-  path: preview.png
+  path: preview.PNG
 media_subpath: /assets/posts/2025-07-01-administrator-hackthebox
 tags:
 - hackthebox
@@ -66,49 +66,49 @@ Host script results:
 
 ## Starting Creds
 Running bloodhound, Olivia has `GenericWrite` over `Michaels` account, allowing us to reset his password.
-![capture-1](capture-1.png)
+![capture-1](capture-1.PNG)
 ```
 Set-ADAccountPassword -Identity "michael" -NewPassword (ConvertTo-SecureString "N3wP@ssw0rd!!" -AsPlainText -Force) -Reset
 ```
-![capture-2](capture-2.png)
+![capture-2](capture-2.PNG)
 ## Michael
 Using evil-wirrm, we can log in as Michael.
 Looking through bloodhound again shows that we have `ForceChangePassword` over Benjamin's account.
-![capture-3](capture-3.png)
+![capture-3](capture-3.PNG)
 ```
 Set-ADAccountPassword -Identity benjamin -Reset -NewPassword (ConvertTo-SecureString "P@ssw0rd!!" -AsPlainText -Force)
 ```
-![capture-4](capture-4.png)
+![capture-4](capture-4.PNG)
 
 ## Benjamin
 Because Benjamin does not have access to RDP, the only way to check to see if his password was reset is by using smbmap.
-![capture-5](capture-5.png)
+![capture-5](capture-5.PNG)
 Bloodhound does not reveal anything, but checking FTP, we find a 'Backup.psafe3'. 
-![capture-6](capture-6.png)
+![capture-6](capture-6.PNG)
 Downloading this, we can crack the master password with hashcat.
 ```
 hashcat -m 5200 Backup.psafe3 /usr/share/wordlists/rockyou.txt
 ```
-![capture-7](capture-7.png)
+![capture-7](capture-7.PNG)
 in order to open this file, use a Windows machine & download the following program: [pwsafe.org](https://pwsafe.org).
 Once opened, enter the cracked masterpassword to gain access to the vault.
-![capture-8](capture-8.png)
+![capture-8](capture-8.PNG)
 Copying the username and passwords to seperate files (usernames.txt, passwords.txt), we can spray these across the network using nxc.
 ```
 nxc smb 10.129.93.47 -u usernames.txt -p passwords.txt -d administrator.htb
 ```
-![capture-9](capture-9.png)
+![capture-9](capture-9.PNG)
 
 ## Emily
 Log in through win-rm to gain the userflag.
 Looking through bloodhound, we have `GenericWrite` over "Ethan's" account.
-![capture-10](capture-10.png)
+![capture-10](capture-10.PNG)
 We can create a fake SPN and make the account keberoastable to gain their hash.
 ```
 Set-ADUser ethan -ServicePrincipalNames @{Add="fake/http/roastme"}
 Set-ADUser ethan -Properties -ServicePrincipalName // check to see if it worked
 ```
-![capture-11](capture-11.png)
+![capture-11](capture-11.PNG)
 Once the fake SPn has been added, run impackets GetUserSPNs.
 
 ```
@@ -137,15 +137,15 @@ With Ethan's hash, use hashcat to crack it.
 ```
 hashcat -m 13100 -a 0 hash.txt /usr/share/wordlists/rockyou.txt
 ```
-![capture-13](capture-hash.png)
+![capture-13](capture-hash.PNG)
 
 ## Ethan
 Using bloodhound again, we find that Ethan has `GetChangesAll, GetChanges` over the domain controller. This allows us to perform a desync attack, giving us access to user hashes.
-![capture-13](capture-13.png)
+![capture-13](capture-13.PNG)
 Using impackets secretdump, we can dump the domain controllers hashes.
 ```
 sudo impacket-secretsdump 'administrator.htb/ethan:limpbizkit@10.129.93.47'
 ```
-![capture-14](capture-14.png)
+![capture-14](capture-14.PNG)
 With the administrator hash, we can perform a pass-the-hash attack to obtain the root flag.
-![capture-15](capture-15.png)
+![capture-15](capture-15.PNG)

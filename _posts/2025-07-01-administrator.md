@@ -3,7 +3,7 @@ categories:
 - CTF
 layout: post
 image:
-  path: preview.PNG
+  path: preview.png
 media_subpath: /assets/posts/2025-07-01-administrator-hackthebox
 tags:
 - hackthebox

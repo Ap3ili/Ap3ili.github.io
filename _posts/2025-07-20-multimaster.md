@@ -140,7 +140,7 @@ Spraying the usernames and passwords yields no results. So back to the drawing b
 Another technique I found was the ability to use sql injection with MSSQL, we are able to dump the SID of the domain controller which allows us to enumerate potential users with the SID of the domain.
 Using `UNION SELECT 1,sys.fn_varbintohexstr(SUSER_SID('MEGACORP\Domain Admins')),3,4,5--`, we are able to confirm this theory.
 ![capture-07](capture-07.PNG)
-Using a custom script to enumerate all the SIDs on the domain, we are able to find a couple potential users.
+Using a custom script to enumerate all the RIDs on the domain, we are able to find a couple potential users.
 ```
 svc-nas
 Privileged IT Accounts
